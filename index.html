@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KX Media · 頻道日報</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ── 密碼頁樣式 ── */
+#pw-screen{
+  display:none;
+  position:fixed;inset:0;z-index:9999;
+  background:#0f0f0e;
+  flex-direction:column;align-items:center;justify-content:center;gap:0;
+}
+.pw-box{
+  width:360px;
+  border:1px solid #2a2a26;border-radius:12px;
+  background:#161614;overflow:hidden;
+}
+.pw-header{
+  padding:28px 28px 20px;text-align:center;
+  border-bottom:1px solid #2a2a26;
+}
+.pw-logo{
+  font-family:'Syne',sans-serif;font-size:22px;font-weight:800;
+  color:#f0ede6;letter-spacing:-.02em;margin-bottom:6px;
+}
+.pw-logo em{color:#4caf82;font-style:normal}
+.pw-subtitle{font-size:11px;color:#50504a;letter-spacing:.08em;text-transform:uppercase}
+.pw-body{padding:24px 28px}
+.pw-label{
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  color:#8a8880;letter-spacing:.12em;text-transform:uppercase;
+  margin-bottom:8px;display:block;
+}
+.pw-input-wrap{position:relative}
+#pw-input{
+  width:100%;padding:11px 44px 11px 14px;
+  background:#1e1e1b;border:1px solid #333330;border-radius:6px;
+  color:#f0ede6;font-family:'JetBrains Mono',monospace;font-size:14px;
+  outline:none;transition:border-color .15s;letter-spacing:.08em;
+}
+#pw-input:focus{border-color:#4caf82}
+#pw-input.error{border-color:#e05050;animation:shake .4s ease}
+.pw-eye{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;color:#50504a;font-size:16px;
+  transition:color .15s;padding:0;line-height:1;
+}
+.pw-eye:hover{color:#8a8880}
+.pw-err{
+  font-size:11px;color:#e05050;margin-top:8px;
+  font-family:'JetBrains Mono',monospace;
+  opacity:0;transition:opacity .2s;min-height:16px;
+}
+.pw-err.show{opacity:1}
+#pw-submit{
+  width:100%;margin-top:16px;padding:12px;
+  background:#4caf82;border:none;border-radius:6px;
+  color:#000;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;
+  letter-spacing:.04em;cursor:pointer;transition:opacity .15s,transform .1s;
+}
+#pw-submit:hover{opacity:.88;transform:translateY(-1px)}
+#pw-submit:active{transform:translateY(0)}
+.pw-footer{
+  padding:14px 28px 20px;text-align:center;
+  font-size:11px;color:#333330;font-family:'JetBrains Mono',monospace;
+}
+@keyframes shake{
+  0%,100%{transform:translateX(0)}
+  20%,60%{transform:translateX(-6px)}
+  40%,80%{transform:translateX(6px)}
+}
+</style>
+<style>
+:root{
+  --bg:#0f0f0e;--bg2:#161614;--bg3:#1e1e1b;--bg4:#252520;
+  --ink:#f0ede6;--ink2:#c8c4bc;--ink3:#8a8880;--ink4:#50504a;
+  --rule:#2a2a26;--rule2:#333330;
+  --real:#4caf82;--real-d:#1a3d2e;--real-x:#0d2018;
+  --ai:#5b9bd5;--ai-d:#1a2d4a;--ai-x:#0d1826;
+  --multi:#e09840;--multi-d:#3d2800;--multi-x:#201400;
+  --red:#e05050;
+  --head:'Syne',sans-serif;
+  --body:'Noto Sans TC',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:13px;line-height:1.6;min-height:100vh}
+
+/* ── TOP BAR ── */
+.topbar{
+  position:sticky;top:0;z-index:300;
+  background:rgba(15,15,14,.92);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--rule);
+  height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;
+}
+.logo{font-family:var(--head);font-size:17px;font-weight:800;color:var(--ink);letter-spacing:-.02em}
+.logo em{color:var(--real);font-style:normal}
+.logo small{font-weight:400;font-size:11px;color:var(--ink4);margin-left:10px;letter-spacing:.08em;text-transform:uppercase}
+.topbar-r{display:flex;align-items:center;gap:10px}
+.rpill{font-family:var(--mono);font-size:10px;color:var(--ink4);padding:4px 10px;border:1px solid var(--rule2);border-radius:20px;background:var(--bg3)}
+.aibtn{
+  padding:6px 16px;border-radius:4px;border:none;cursor:pointer;
+  font-family:var(--head);font-size:12px;font-weight:700;letter-spacing:.04em;
+  background:var(--real);color:#000;transition:opacity .15s,transform .1s;
+}
+.aibtn:hover{opacity:.85;transform:translateY(-1px)}
+.aibtn.busy{opacity:.5;cursor:wait}
+
+/* ── TYPE NAV ── */
+.tnav{
+  background:var(--bg2);border-bottom:1px solid var(--rule);
+  display:flex;padding:0 32px;
+  position:sticky;top:54px;z-index:200;
+}
+.tbtn{
+  height:46px;padding:0 22px;display:flex;align-items:center;gap:8px;
+  font-family:var(--head);font-size:13px;font-weight:600;letter-spacing:.03em;
+  color:var(--ink4);background:none;border:none;border-bottom:2px solid transparent;
+  cursor:pointer;transition:color .15s,border-color .15s;white-space:nowrap;
+}
+.tbtn:hover{color:var(--tc)}
+.tbtn.on{color:var(--tc);border-bottom-color:var(--tc)}
+.tbtn[data-t=real]{--tc:var(--real)}
+.tbtn[data-t=ai]{--tc:var(--ai)}
+.tbtn[data-t=multi]{--tc:var(--multi)}
+.tct{font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:99px;background:var(--tbg);color:var(--tc)}
+.tbtn[data-t=real] .tct{--tbg:var(--real-x)}
+.tbtn[data-t=ai]   .tct{--tbg:var(--ai-x)}
+.tbtn[data-t=multi].tct{--tbg:var(--multi-x)}
+
+/* ── LOADING ── */
+.loading-screen{
+  position:fixed;inset:0;background:var(--bg);z-index:999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+}
+.loading-screen.hide{display:none}
+.loading-logo{font-family:var(--head);font-size:28px;font-weight:800;color:var(--ink)}
+.loading-logo em{color:var(--real);font-style:normal}
+.loading-bar{width:200px;height:2px;background:var(--rule2);border-radius:99px;overflow:hidden}
+.loading-fill{height:100%;background:var(--real);border-radius:99px;animation:ldfill 1.8s ease-in-out infinite}
+@keyframes ldfill{0%{width:0%;margin-left:0}50%{width:60%}100%{width:0%;margin-left:100%}}
+.loading-msg{font-family:var(--mono);font-size:11px;color:var(--ink4)}
+.err-screen{
+  position:fixed;inset:0;background:var(--bg);z-index:999;
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  text-align:center;padding:32px;
+}
+.err-screen.show{display:flex}
+.err-title{font-family:var(--head);font-size:20px;font-weight:700;color:var(--red)}
+.err-msg{font-family:var(--mono);font-size:12px;color:var(--ink3);max-width:500px;line-height:1.8}
+.err-step{background:var(--bg3);border:1px solid var(--rule2);border-radius:6px;padding:16px 20px;max-width:520px;text-align:left;font-size:12px;line-height:2}
+.err-step code{font-family:var(--mono);color:var(--real);font-size:11px}
+
+/* ── PAGE ── */
+.page{max-width:1380px;margin:0 auto;padding:24px 32px 80px}
+.tpanel{display:none}.tpanel.on{display:block}
+
+/* ── DATE BAR ── */
+.dbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.dbar label{font-size:11px;color:var(--ink4);font-family:var(--mono)}
+.dbar input[type=date]{
+  padding:5px 10px;border:1px solid var(--rule2);border-radius:4px;
+  background:var(--bg3);color:var(--ink);font-family:var(--mono);font-size:11px;cursor:pointer;outline:none;
+}
+.dbar input[type=date]:focus{border-color:var(--pa)}
+.scbtns{display:flex;gap:4px}
+.sc{
+  padding:4px 10px;border-radius:3px;border:1px solid var(--rule2);
+  background:var(--bg3);color:var(--ink4);font-family:var(--mono);font-size:10px;cursor:pointer;transition:all .12s;
+}
+.sc:hover,.sc.on{border-color:var(--pa);color:var(--pa)}
+.sc.on{background:var(--pa);color:#000;font-weight:600}
+.applybtn{
+  padding:5px 14px;border-radius:3px;border:none;cursor:pointer;
+  background:var(--pa);color:#000;font-family:var(--head);font-size:11px;font-weight:700;letter-spacing:.04em;
+}
+
+/* ── HERO ── */
+.hero{
+  padding:18px 22px;border-radius:8px;margin-bottom:18px;
+  background:var(--ph-bg);border:1px solid var(--ph-border);
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+}
+.hero-ico{
+  width:46px;height:46px;border-radius:8px;background:var(--pa);color:#000;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--head);font-size:14px;font-weight:800;flex-shrink:0;
+}
+.hero-title{font-family:var(--head);font-size:21px;font-weight:800;color:var(--pa);line-height:1}
+.hero-sub{font-size:11px;color:var(--ink3);margin-top:3px}
+.hero-kpis{display:flex;gap:22px;margin-left:auto;flex-wrap:wrap}
+.hk{text-align:right}
+.hk-v{font-family:var(--head);font-size:20px;font-weight:700;color:var(--pa);line-height:1}
+.hk-t{font-family:var(--mono);font-size:9px;color:var(--ink4);letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+
+/* ── KPI ROW ── */
+.krow{display:grid;grid-template-columns:repeat(6,1fr);border:1px solid var(--rule2);border-radius:6px;overflow:hidden;margin-bottom:18px}
+@media(max-width:900px){.krow{grid-template-columns:repeat(3,1fr)}}
+.kc{padding:14px 16px;background:var(--bg2);border-right:1px solid var(--rule);transition:background .12s}
+.kc:last-child{border-right:none}
+.kc:hover{background:var(--bg3)}
+.kt{font-family:var(--mono);font-size:9px;color:var(--ink4);letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px}
+.kv{font-family:var(--head);font-size:22px;font-weight:700;color:var(--ink);line-height:1;margin-bottom:3px}
+.ks{font-size:11px;color:var(--ink3)}
+.pos{color:var(--real)}.neg{color:var(--red)}
+
+/* ── SECTION LABEL ── */
+.sl{display:flex;align-items:center;gap:8px;margin:22px 0 12px}
+.sl-n{font-family:var(--mono);font-size:10px;color:var(--ink4);letter-spacing:.15em}
+.sl-t{font-family:var(--head);font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.1em;text-transform:uppercase}
+.sl-l{flex:1;height:1px;background:var(--rule)}
+.sl-note{font-size:11px;color:var(--ink4)}
+
+/* ── LOOKER ── */
+.lcard{border:1px solid var(--rule2);border-radius:8px;overflow:hidden;margin-bottom:16px}
+.lhd{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg3);border-bottom:1px solid var(--rule)}
+.llbl{display:flex;align-items:center;gap:7px;font-family:var(--head);font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase}
+.pip{width:7px;height:7px;border-radius:50%;animation:blink 2.5s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.lframe{width:100%;height:500px;border:none;display:block;background:var(--bg3)}
+
+/* ── GRID ── */
+.twocol{display:grid;grid-template-columns:1.6fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:860px){.twocol{grid-template-columns:1fr}}
+.card{background:var(--bg2);border:1px solid var(--rule2);border-radius:6px;overflow:hidden}
+.chd{display:flex;align-items:baseline;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid var(--rule)}
+.ctitle{font-family:var(--head);font-size:13px;font-weight:700;color:var(--ink);letter-spacing:.02em}
+.csub{font-size:11px;color:var(--ink4)}
+.cbody{padding:14px 16px}
+
+/* ── BAR ── */
+.blist{display:flex;flex-direction:column;gap:6px}
+.brow{display:flex;align-items:center;gap:8px}
+.bname{width:115px;flex-shrink:0;font-size:12px;color:var(--ink2);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btrack{flex:1;height:20px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.bfill{height:100%;border-radius:2px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-family:var(--mono);font-size:10px;font-weight:500;color:#000;transition:width .7s cubic-bezier(.4,0,.2,1);min-width:36px}
+.bpct{width:34px;flex-shrink:0;font-family:var(--mono);font-size:10px;color:var(--ink4);text-align:right}
+
+/* ── TABLE ── */
+.twrap{overflow-x:auto}
+.dt{width:100%;border-collapse:collapse;font-size:12px}
+.dt th{font-family:var(--mono);font-size:9px;font-weight:500;color:var(--ink4);text-transform:uppercase;letter-spacing:.1em;padding:7px 10px;border-bottom:1px solid var(--rule2);text-align:left;white-space:nowrap;background:var(--bg3)}
+.dt td{padding:7px 10px;border-bottom:1px solid var(--rule);color:var(--ink2);vertical-align:middle}
+.dt tbody tr:hover td{background:var(--bg3)}
+.dt td:first-child{color:var(--ink);font-weight:500}
+.rk{font-family:var(--mono);font-size:10px;color:var(--ink4)}
+.nm{font-family:var(--mono);font-size:11px}
+.g{color:var(--real);font-family:var(--mono);font-size:11px}
+.r{color:var(--red);font-family:var(--mono);font-size:11px}
+
+/* ── AI ── */
+.icard{border:1px solid var(--rule2);border-radius:6px;overflow:hidden;margin-top:14px}
+.ihd{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg3);border-bottom:1px solid var(--rule)}
+.iico{width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;background:var(--pa);color:#000}
+.ititl{font-family:var(--head);font-size:13px;font-weight:700;color:var(--ink);flex:1;letter-spacing:.02em}
+.imeta{font-family:var(--mono);font-size:10px;color:var(--ink4)}
+.ibody{padding:16px;font-size:13px;line-height:1.85;white-space:pre-wrap;color:var(--ink2);background:var(--bg2)}
+.spin{width:14px;height:14px;border:2px solid var(--rule2);border-top-color:var(--pa);border-radius:50%;animation:rot .8s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* ── PER-TAB ── */
+.tpanel[data-t=real] {--pa:var(--real);--ph-bg:var(--real-x);--ph-border:var(--real-d)}
+.tpanel[data-t=ai]   {--pa:var(--ai);  --ph-bg:var(--ai-x);  --ph-border:var(--ai-d)}
+.tpanel[data-t=multi]{--pa:var(--multi);--ph-bg:var(--multi-x);--ph-border:var(--multi-d)}
+
+footer{border-top:1px solid var(--rule);padding:16px 32px;display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--ink4)}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.fi{animation:fi .3s ease both}
+</style>
+</head>
+<body>
+
+<!-- ══ 密碼驗證頁 ══ -->
+<div id="pw-screen">
+  <div class="pw-box">
+    <div class="pw-header">
+      <div class="pw-logo">KX<em>·</em>MEDIA</div>
+      <div class="pw-subtitle">內部頻道日報 · 請輸入訪問密碼</div>
+    </div>
+    <div class="pw-body">
+      <label class="pw-label" for="pw-input">訪問密碼</label>
+      <div class="pw-input-wrap">
+        <input type="password" id="pw-input" placeholder="••••••••••" autocomplete="current-password"
+               onkeydown="if(event.key==='Enter')checkPw()">
+        <button class="pw-eye" onclick="togglePwVis()" id="pw-eye-btn" title="顯示/隱藏密碼">👁</button>
+      </div>
+      <div class="pw-err" id="pw-err">密碼錯誤，請重試</div>
+      <button id="pw-submit" onclick="checkPw()">進入儀表板 →</button>
+    </div>
+    <div class="pw-footer">登入狀態保留 24 小時</div>
+  </div>
+</div>
+
+<!-- Loading Screen -->
+<div class="loading-screen" id="loading">
+  <div class="loading-logo">KX<em>·</em>MEDIA</div>
+  <div class="loading-bar"><div class="loading-fill"></div></div>
+  <div class="loading-msg" id="loading-msg">連接 Google Sheets…</div>
+</div>
+
+<!-- Error Screen -->
+<div class="err-screen" id="err-screen">
+  <div class="err-title">⚠ 無法載入數據</div>
+  <div class="err-msg" id="err-msg">無法連接到 Google Apps Script API</div>
+  <div class="err-step">
+    <strong style="color:var(--ink);font-family:var(--head)">設置步驟：</strong><br>
+    1. 打開 <code>Google Sheets → 擴充功能 → Apps Script</code><br>
+    2. 貼上 <code>kx_apps_script.js</code> 的代碼<br>
+    3. 部署 → 新增部署 → 網頁應用程式<br>
+    4. 執行身份：<code>我</code>，存取權限：<code>所有人</code><br>
+    5. 複製網址，替換此頁面的 <code>API_URL</code> 變數<br>
+    6. 重新開啟此頁面
+  </div>
+  <button onclick="location.reload()" style="padding:8px 20px;background:var(--real);color:#000;border:none;border-radius:4px;font-family:var(--head);font-weight:700;cursor:pointer;margin-top:8px">重試</button>
+</div>
+
+<header class="topbar">
+  <div class="logo">KX<em>·</em>MEDIA <small>頻道日報</small></div>
+  <div class="topbar-r">
+    <div class="rpill" id="hdr-range">—</div>
+    <button class="aibtn" id="ai-btn" onclick="runAI()">✦ AI 分析</button>
+  </div>
+</header>
+
+<nav class="tnav">
+  <button class="tbtn on" data-t="real"  onclick="switchTab('real',this)">真人頻道 <span class="tct" id="ct-real">—</span></button>
+  <button class="tbtn"    data-t="ai"    onclick="switchTab('ai',this)">AI 頻道 <span class="tct" id="ct-ai">—</span></button>
+  <button class="tbtn"    data-t="multi" onclick="switchTab('multi',this)">多語種 <span class="tct" id="ct-multi">—</span></button>
+</nav>
+
+<div class="page" id="main-page" style="display:none">
+
+<!-- ══ 真人 ══ -->
+<div class="tpanel on fi" data-t="real" id="panel-real">
+  <div class="dbar">
+    <label>從</label><input type="date" id="d1-real">
+    <label>到</label><input type="date" id="d2-real">
+    <div class="scbtns">
+      <button class="sc" onclick="sc('real',7,this)">7天</button>
+      <button class="sc on" onclick="sc('real',14,this)">14天</button>
+      <button class="sc" onclick="sc('real',30,this)">30天</button>
+    </div>
+    <button class="applybtn" onclick="applyDates('real')">套用</button>
+  </div>
+  <div class="hero"><div class="hero-ico">真人</div>
+    <div><div class="hero-title">真人頻道</div><div class="hero-sub">主持人原創內容 · Mandarin / Cantonese / English</div></div>
+    <div class="hero-kpis" id="hs-real"></div>
+  </div>
+  <div class="krow" id="kpi-real"></div>
+  <div class="sl"><div class="sl-n">01</div><div class="sl-t">Looker Studio</div><div class="sl-l"></div><div class="sl-note">與 Google Sheets 實時同步</div></div>
+  <div class="lcard">
+    <div class="lhd"><div class="llbl"><div class="pip" style="background:var(--real)"></div>LIVE · Looker Studio</div><div style="font-size:11px;color:var(--ink4)">da154aa8 · page/BYpuF</div></div>
+    <iframe class="lframe" src="https://datastudio.google.com/embed/reporting/da154aa8-d4be-4d2e-962b-cabf6a61f9dd/page/BYpuF" allowfullscreen sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
+  </div>
+  <div class="sl"><div class="sl-n">02</div><div class="sl-t">數據圖表</div><div class="sl-l"></div><div class="sl-note" id="drange-real"></div></div>
+  <div class="twocol">
+    <div class="card"><div class="chd"><div class="ctitle">觀看量排名</div><div class="csub">Top 15</div></div><div class="cbody"><div class="blist" id="bars-real"></div></div></div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="card" style="flex:1"><div class="chd"><div class="ctitle">語言分佈</div></div><div class="cbody" style="padding:10px"><canvas id="lang-real" height="155"></canvas></div></div>
+      <div class="card" style="flex:1"><div class="chd"><div class="ctitle">觀看率 Top 8</div></div><div class="cbody" style="padding:10px"><canvas id="rate-real" height="155"></canvas></div></div>
+    </div>
+  </div>
+  <div class="sl"><div class="sl-n">03</div><div class="sl-t">完整數據表</div><div class="sl-l"></div><div class="sl-note" id="tc-real"></div></div>
+  <div class="card"><div class="twrap"><table class="dt"><thead><tr><th>#</th><th>頻道</th><th>語言</th><th>主持人</th><th>觀看量</th><th>觀看率</th><th>訂閱+</th><th>訂閱-</th><th>淨訂閱</th></tr></thead><tbody id="tbl-real"></tbody></table></div></div>
+  <div class="sl" style="margin-top:22px"><div class="sl-n">04</div><div class="sl-t">Claude AI 洞察</div><div class="sl-l"></div></div>
+  <div class="icard"><div class="ihd"><div class="iico">✦</div><div class="ititl">真人頻道分析</div><div class="imeta" id="im-real">—</div></div><div id="ib-real" class="ibody" style="color:var(--ink4);font-style:italic">點擊右上角「✦ AI 分析」觸發分析。</div></div>
+</div>
+
+<!-- ══ AI ══ -->
+<div class="tpanel fi" data-t="ai" id="panel-ai">
+  <div class="dbar">
+    <label>從</label><input type="date" id="d1-ai">
+    <label>到</label><input type="date" id="d2-ai">
+    <div class="scbtns">
+      <button class="sc" onclick="sc('ai',7,this)">7天</button>
+      <button class="sc on" onclick="sc('ai',14,this)">14天</button>
+      <button class="sc" onclick="sc('ai',30,this)">30天</button>
+    </div>
+    <button class="applybtn" onclick="applyDates('ai')" style="background:var(--ai)">套用</button>
+  </div>
+  <div class="hero"><div class="hero-ico">AI</div>
+    <div><div class="hero-title">AI 頻道</div><div class="hero-sub">AI 自動生成內容 · 多語言覆蓋</div></div>
+    <div class="hero-kpis" id="hs-ai"></div>
+  </div>
+  <div class="krow" id="kpi-ai"></div>
+  <div class="sl"><div class="sl-n">01</div><div class="sl-t">Looker Studio</div><div class="sl-l"></div></div>
+  <div class="lcard">
+    <div class="lhd"><div class="llbl"><div class="pip" style="background:var(--ai)"></div>LIVE · Looker Studio</div></div>
+    <iframe class="lframe" src="https://datastudio.google.com/embed/reporting/da154aa8-d4be-4d2e-962b-cabf6a61f9dd/page/BYpuF" allowfullscreen sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
+  </div>
+  <div class="sl"><div class="sl-n">02</div><div class="sl-t">數據圖表</div><div class="sl-l"></div><div class="sl-note" id="drange-ai"></div></div>
+  <div class="twocol">
+    <div class="card"><div class="chd"><div class="ctitle">觀看量排名</div><div class="csub">Top 15</div></div><div class="cbody"><div class="blist" id="bars-ai"></div></div></div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="card" style="flex:1"><div class="chd"><div class="ctitle">語言分佈</div></div><div class="cbody" style="padding:10px"><canvas id="lang-ai" height="155"></canvas></div></div>
+      <div class="card" style="flex:1"><div class="chd"><div class="ctitle">觀看率 Top 8</div></div><div class="cbody" style="padding:10px"><canvas id="rate-ai" height="155"></canvas></div></div>
+    </div>
+  </div>
+  <div class="sl"><div class="sl-n">03</div><div class="sl-t">完整數據表</div><div class="sl-l"></div><div class="sl-note" id="tc-ai"></div></div>
+  <div class="card"><div class="twrap"><table class="dt"><thead><tr><th>#</th><th>頻道</th><th>語言</th><th>主持人</th><th>觀看量</th><th>觀看率</th><th>訂閱+</th><th>訂閱-</th><th>淨訂閱</th></tr></thead><tbody id="tbl-ai"></tbody></table></div></div>
+  <div class="sl" style="margin-top:22px"><div class="sl-n">04</div><div class="sl-t">Claude AI 洞察</div><div class="sl-l"></div></div>
+  <div class="icard"><div class="ihd"><div class="iico">✦</div><div class="ititl">AI 頻道分析</div><div class="imeta" id="im-ai">—</div></div><div id="ib-ai" class="ibody" style="color:var(--ink4);font-style:italic">點擊右上角「✦ AI 分析」觸發分析。</div></div>
+</div>
+
+<!-- ══ 多語種 ══ -->
+<div class="tpanel fi" data-t="multi" id="panel-multi">
+  <div class="dbar">
+    <label>從</label><input type="date" id="d1-multi">
+    <label>到</label><input type="date" id="d2-multi">
+    <div class="scbtns">
+      <button class="sc" onclick="sc('multi',7,this)">7天</button>
+      <button class="sc on" onclick="sc('multi',14,this)">14天</button>
+      <button class="sc" onclick="sc('multi',30,this)">30天</button>
+    </div>
+    <button class="applybtn" onclick="applyDates('multi')" style="background:var(--multi)">套用</button>
+  </div>
+  <div class="hero"><div class="hero-ico" style="font-size:12px">多語</div>
+    <div><div class="hero-title">多語種頻道</div><div class="hero-sub">跨語言擴展 · Japanese / English / Cantonese / Vietnamese</div></div>
+    <div class="hero-kpis" id="hs-multi"></div>
+  </div>
+  <div class="krow" id="kpi-multi"></div>
+  <div class="sl"><div class="sl-n">01</div><div class="sl-t">Looker Studio</div><div class="sl-l"></div></div>
+  <div class="lcard">
+    <div class="lhd"><div class="llbl"><div class="pip" style="background:var(--multi)"></div>LIVE · Looker Studio</div></div>
+    <iframe class="lframe" src="https://datastudio.google.com/embed/reporting/da154aa8-d4be-4d2e-962b-cabf6a61f9dd/page/BYpuF" allowfullscreen sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
+  </div>
+  <div class="sl"><div class="sl-n">02</div><div class="sl-t">數據圖表</div><div class="sl-l"></div><div class="sl-note" id="drange-multi"></div></div>
+  <div class="twocol">
+    <div class="card"><div class="chd"><div class="ctitle">觀看量排名</div><div class="csub">Top 15</div></div><div class="cbody"><div class="blist" id="bars-multi"></div></div></div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="card" style="flex:1"><div class="chd"><div class="ctitle">語言分佈</div></div><div class="cbody" style="padding:10px"><canvas id="lang-multi" height="155"></canvas></div></div>
+      <div class="card" style="flex:1"><div class="chd"><div class="ctitle">淨訂閱 Top 8</div></div><div class="cbody" style="padding:10px"><canvas id="subs-multi" height="155"></canvas></div></div>
+    </div>
+  </div>
+  <div class="sl"><div class="sl-n">03</div><div class="sl-t">完整數據表</div><div class="sl-l"></div><div class="sl-note" id="tc-multi"></div></div>
+  <div class="card"><div class="twrap"><table class="dt"><thead><tr><th>#</th><th>頻道</th><th>語言</th><th>類型</th><th>主持人</th><th>觀看量</th><th>觀看率</th><th>訂閱+</th><th>訂閱-</th><th>淨訂閱</th></tr></thead><tbody id="tbl-multi"></tbody></table></div></div>
+  <div class="sl" style="margin-top:22px"><div class="sl-n">04</div><div class="sl-t">Claude AI 洞察</div><div class="sl-l"></div></div>
+  <div class="icard"><div class="ihd"><div class="iico">✦</div><div class="ititl">多語種頻道分析</div><div class="imeta" id="im-multi">—</div></div><div id="ib-multi" class="ibody" style="color:var(--ink4);font-style:italic">點擊右上角「✦ AI 分析」觸發分析。</div></div>
+</div>
+
+</div><!-- /page -->
+
+<footer>
+  <span>KX Media · 頻道日報 · Google Sheets + Looker Studio + Claude AI</span>
+  <span id="fts">—</span>
+</footer>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  ★★★ 設置你的 Apps Script 部署網址 ★★★
+//  完成 Apps Script 部署後，把網址貼在這裡
+// ══════════════════════════════════════════════════════════════
+const API_URL = 'https://script.google.com/a/macros/kx-media.com/s/AKfycbwy_0tmnTfxPRpWYfZDQRedaeHGRRSQTcc_XxOQR71yooLS8mzQgTKxIyuOWQm4I-eolw/exec';
+// 範例: 'https://script.google.com/macros/s/AKfycbx.../exec'
+
+// ══════════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════════
+let RAW = [];          // [[date, title, views, rate, sg, sl, emw, avd], ...]
+let META = {};         // {title: {type, ct, lang, host, status}}
+let curTab = 'real';
+const charts = {};
+const AC = {real:'#4caf82', ai:'#5b9bd5', multi:'#e09840'};
+const CL = {
+  real:  ['#4caf82','#3d9e72','#2e8d62','#1f7c52','#10693f','#0d5533','#0a4228','#073020'],
+  ai:    ['#5b9bd5','#4a88c2','#3976af','#28639c','#1a4f89','#133e6e','#0d2e53','#081e38'],
+  multi: ['#e09840','#cd8632','#ba7425','#a76218','#94500c','#7a3f08','#602e04','#481e02'],
+};
+
+// ══════════════════════════════════════════════════════════════
+//  FETCH DATA
+// ══════════════════════════════════════════════════════════════
+function setMsg(m){document.getElementById('loading-msg').textContent=m}
+
+async function loadData(){
+  // 如果沒有設定 API_URL，直接顯示錯誤
+  if(!API_URL || API_URL==='YOUR_APPS_SCRIPT_URL_HERE'){
+    showError('尚未設置 Apps Script API 網址','請先完成 Apps Script 部署，然後把網址填入此頁面的 API_URL 變數。');
+    return;
+  }
+
+  try{
+    setMsg('讀取頻道分類資料…');
+    const [metaRes, weeklyRes] = await Promise.all([
+      fetch(API_URL+'?action=meta'),
+      fetch(API_URL+'?action=weekly')
+    ]);
+
+    if(!metaRes.ok || !weeklyRes.ok) throw new Error(`HTTP ${metaRes.status}/${weeklyRes.status}`);
+
+    setMsg('解析數據…');
+    META = await metaRes.json();
+    RAW  = await weeklyRes.json();
+
+    if(META.error)  throw new Error('Meta: '+META.error);
+    if(RAW.error)   throw new Error('Weekly: '+RAW.error);
+    if(!Array.isArray(RAW)) throw new Error('數據格式錯誤');
+
+    // Done
+    document.getElementById('loading').classList.add('hide');
+    document.getElementById('main-page').style.display='block';
+    initDates();
+    renderAll();
+
+  } catch(e){
+    showError('載入失敗：'+e.message, '請確認 Apps Script 已正確部署，且 API_URL 設置正確。');
+  }
+}
+
+function showError(title, msg){
+  document.getElementById('loading').classList.add('hide');
+  const es=document.getElementById('err-screen');
+  es.classList.add('show');
+  es.querySelector('.err-title').textContent='⚠ '+title;
+  document.getElementById('err-msg').textContent=msg;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════════════════════
+function fmt(n){
+  if(!n||n===0)return'0';
+  if(n>=1e6)return(n/1e6).toFixed(2)+'M';
+  if(n>=1e3)return Math.round(n/1e3)+'K';
+  return String(n);
+}
+function toYMD(d){return new Date(d).toISOString().slice(0,10)}
+function dAgo(n){const d=new Date();d.setDate(d.getDate()-n);return toYMD(d)}
+function getRange(t){return{d1:document.getElementById('d1-'+t).value,d2:document.getElementById('d2-'+t).value}}
+
+function classify(tab, title){
+  const m=META[title];
+  if(!m)return false;
+  if(tab==='real')  return m.type==='真人'&&m.ct==='原創';
+  if(tab==='ai')    return m.type==='AI'&&m.ct==='原創';
+  if(tab==='multi') return m.ct==='多語種';
+  return false;
+}
+
+function getChannels(tab,d1,d2){
+  const map={};
+  RAW.forEach(row=>{
+    const [date,title,views,rate,sg,sl]=row;
+    if(date<d1||date>d2)return;
+    if(!classify(tab,title))return;
+    if(!map[title]){
+      const m=META[title]||{};
+      map[title]={name:title,views:0,rateSum:0,rateN:0,sg:0,sl:0,
+        lang:m.lang||'',host:m.host||'',type:m.type||'',ct:m.ct||''};
+    }
+    map[title].views+=parseInt(views)||0;
+    map[title].sg+=parseInt(sg)||0;
+    map[title].sl+=parseInt(sl)||0;
+    const r=parseFloat(rate)||0;
+    if(r>0){map[title].rateSum+=r;map[title].rateN++;}
+  });
+  return Object.values(map)
+    .map(c=>({...c,avgRate:c.rateN?(c.rateSum/c.rateN).toFixed(1):0,net:c.sg-c.sl}))
+    .sort((a,b)=>b.views-a.views);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  DATE / TAB CONTROLS
+// ══════════════════════════════════════════════════════════════
+function initDates(){
+  ['real','ai','multi'].forEach(t=>{
+    document.getElementById('d1-'+t).value=dAgo(14);
+    document.getElementById('d2-'+t).value=dAgo(1);
+  });
+}
+
+function sc(tab,days,btn){
+  document.querySelectorAll(`#panel-${tab} .sc`).forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('d1-'+tab).value=dAgo(days);
+  document.getElementById('d2-'+tab).value=dAgo(1);
+  renderTab(tab);
+}
+
+function applyDates(tab){
+  document.querySelectorAll(`#panel-${tab} .sc`).forEach(b=>b.classList.remove('on'));
+  renderTab(tab);
+}
+
+function switchTab(t,btn){
+  curTab=t;
+  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.tpanel').forEach(p=>p.classList.remove('on'));
+  document.getElementById('panel-'+t).classList.add('on');
+  document.getElementById('ai-btn').style.background=AC[t];
+  const {d1,d2}=getRange(t);
+  document.getElementById('hdr-range').textContent=d1+' → '+d2;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════════════════════════════
+function renderAll(){
+  ['real','ai','multi'].forEach(renderTab);
+  const {d1,d2}=getRange(curTab);
+  document.getElementById('hdr-range').textContent=d1+' → '+d2;
+  document.getElementById('fts').textContent='Updated '+new Date().toLocaleString('zh-TW')+' · 數據來自 Google Sheets';
+}
+
+function renderTab(tab){
+  const {d1,d2}=getRange(tab);
+  const ch=getChannels(tab,d1,d2);
+  document.getElementById('ct-'+tab).textContent=ch.length+'個';
+  if(tab===curTab)document.getElementById('hdr-range').textContent=d1+' → '+d2;
+
+  const tv=ch.reduce((s,c)=>s+c.views,0);
+  const tsg=ch.reduce((s,c)=>s+c.sg,0);
+  const net=ch.reduce((s,c)=>s+c.net,0);
+  const ar=ch.length?(ch.reduce((s,c)=>s+parseFloat(c.avgRate),0)/ch.length).toFixed(1):0;
+  const top=ch[0]||{};
+  const topR=[...ch].sort((a,b)=>b.avgRate-a.avgRate)[0]||{};
+
+  // drange label
+  const drEl=document.getElementById('drange-'+tab);
+  if(drEl)drEl.textContent=d1+' → '+d2+' · 來自 Google Sheets';
+
+  // Hero
+  const hs=document.getElementById('hs-'+tab);
+  if(hs)hs.innerHTML=[
+    {v:fmt(tv),t:'總觀看'},{v:ch.length,t:'頻道數'},
+    {v:(net>=0?'+':'')+fmt(net),t:'淨訂閱'},{v:ar+'%',t:'平均觀看率'},
+  ].map(k=>`<div class="hk"><div class="hk-v">${k.v}</div><div class="hk-t">${k.t}</div></div>`).join('');
+
+  // KPI
+  const kpi=document.getElementById('kpi-'+tab);
+  if(kpi)kpi.innerHTML=[
+    {t:'總觀看',v:fmt(tv),s:'期間合計',c:''},
+    {t:'頻道數',v:ch.length,s:`${d1}~${d2}`,c:''},
+    {t:'總訂閱+',v:'+'+fmt(tsg),s:'期間新增',c:'pos'},
+    {t:'淨訂閱',v:(net>=0?'+':'')+fmt(net),s:'gained−lost',c:net>=0?'pos':'neg'},
+    {t:'冠軍',v:(top.name||'—').slice(0,7)+(top.name&&top.name.length>7?'…':''),s:fmt(top.views||0),c:''},
+    {t:'最高觀看率',v:(topR.avgRate||0)+'%',s:(topR.name||'—').slice(0,6),c:''},
+  ].map((k,i)=>`<div class="kc"><div class="kt">${k.t}</div><div class="kv ${k.c}">${k.v}</div><div class="ks">${k.s}</div></div>`).join('');
+
+  // Bars
+  const t15=ch.slice(0,15);const mx=t15[0]?.views||1;
+  const bEl=document.getElementById('bars-'+tab);
+  if(bEl)bEl.innerHTML=t15.map((c,i)=>`
+    <div class="brow"><div class="bname" title="${c.name}">${c.name}</div>
+      <div class="btrack"><div class="bfill" style="width:${Math.round(c.views/mx*100)}%;background:${CL[tab][Math.min(i,7)]}">${fmt(c.views)}</div></div>
+      <div class="bpct">${c.avgRate}%</div></div>`).join('');
+
+  // Lang chart
+  const lm={};ch.forEach(c=>{lm[c.lang||'?']=(lm[c.lang||'?']||0)+1;});
+  const ls=Object.entries(lm).sort((a,b)=>b[1]-a[1]);
+  const lid='lang-'+tab;
+  if(charts[lid])charts[lid].destroy();
+  charts[lid]=new Chart(document.getElementById(lid),{
+    type:'bar',
+    data:{labels:ls.map(x=>x[0]),datasets:[{data:ls.map(x=>x[1]),backgroundColor:CL[tab],borderRadius:2,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.raw} 個`}}},
+      scales:{x:{grid:{display:false},ticks:{color:'#8a8880',font:{size:10}}},
+              y:{grid:{color:'#2a2a26'},ticks:{color:'#8a8880',font:{size:10},stepSize:1}}}}
+  });
+
+  // Rate / subs chart
+  if(tab==='multi'){
+    const t8=[...ch].sort((a,b)=>b.net-a.net).slice(0,8);
+    const sid='subs-multi';
+    if(charts[sid])charts[sid].destroy();
+    charts[sid]=new Chart(document.getElementById(sid),{
+      type:'bar',
+      data:{labels:t8.map(c=>c.name.slice(0,10)),datasets:[{data:t8.map(c=>c.net),
+        backgroundColor:t8.map(c=>c.net>=0?AC.multi+'cc':'#e0505088'),borderRadius:2,borderSkipped:false}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:true,
+        plugins:{legend:{display:false}},
+        scales:{x:{grid:{color:'#2a2a26'},ticks:{color:'#8a8880',font:{size:10}}},
+                y:{grid:{display:false},ticks:{color:'#8a8880',font:{size:10}}}}}
+    });
+  } else {
+    const t8=[...ch].sort((a,b)=>b.avgRate-a.avgRate).slice(0,8);
+    const rid='rate-'+tab;
+    if(charts[rid])charts[rid].destroy();
+    charts[rid]=new Chart(document.getElementById(rid),{
+      type:'bar',
+      data:{labels:t8.map(c=>c.name.slice(0,10)),datasets:[{data:t8.map(c=>parseFloat(c.avgRate)),
+        backgroundColor:AC[tab]+'cc',borderRadius:2,borderSkipped:false}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:true,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.raw}%`}}},
+        scales:{x:{grid:{color:'#2a2a26'},ticks:{color:'#8a8880',font:{size:10}}},
+                y:{grid:{display:false},ticks:{color:'#8a8880',font:{size:10}}}}}
+    });
+  }
+
+  // Table
+  const tc=document.getElementById('tc-'+tab);
+  const tb=document.getElementById('tbl-'+tab);
+  if(tc)tc.textContent=ch.length+' 個頻道';
+  if(tb)tb.innerHTML=ch.map((c,i)=>`
+    <tr>
+      <td class="rk">${String(i+1).padStart(2,'0')}</td>
+      <td>${c.name}</td>
+      <td style="color:var(--ink3);font-size:11px">${c.lang}</td>
+      ${tab==='multi'?`<td style="font-size:10px;color:var(--ink4)">${c.type}</td>`:''}
+      <td style="color:var(--ink3);font-size:11px">${c.host}</td>
+      <td class="nm">${fmt(c.views)}</td>
+      <td class="nm">${c.avgRate}%</td>
+      <td class="nm g">+${c.sg}</td>
+      <td class="nm r">-${c.sl}</td>
+      <td class="nm ${c.net>=0?'g':'r'}">${c.net>=0?'+':''}${c.net}</td>
+    </tr>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CLAUDE AI
+// ══════════════════════════════════════════════════════════════
+async function runAI(){
+  const tab=curTab;
+  const btn=document.getElementById('ai-btn');
+  const ib=document.getElementById('ib-'+tab);
+  const im=document.getElementById('im-'+tab);
+  btn.classList.add('busy');btn.textContent='分析中…';
+  ib.style.cssText='color:var(--ink3);font-style:normal';
+  ib.innerHTML=`<span class="spin"></span>Claude 正在分析數據，約 15 秒…`;
+
+  const {d1,d2}=getRange(tab);
+  const ch=getChannels(tab,d1,d2);
+  const tv=ch.reduce((s,c)=>s+c.views,0);
+  const net=ch.reduce((s,c)=>s+c.net,0);
+  const top3=ch.slice(0,3).map(c=>`${c.name}(${fmt(c.views)},觀看率${c.avgRate}%)`).join('、');
+  const topR=[...ch].sort((a,b)=>b.avgRate-a.avgRate)[0]||{};
+  const langs=[...new Set(ch.map(c=>c.lang).filter(Boolean))].join('、');
+  const typeLabel=tab==='real'?'真人原創':tab==='ai'?'AI原創':'多語種';
+
+  const prompt=`分析「${typeLabel}頻道」(${d1}~${d2}) 數據，用繁體中文給3條洞察（• 開頭，每條30字內，給具體結論和建議）：\n頻道：${ch.length}個，總觀看：${fmt(tv)}，淨訂閱：${net>=0?'+':''}${net}\nTop3：${top3}\n最高觀看率：${topR.name||'—'} ${topR.avgRate}%\n語言：${langs}`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'content-type':'application/json'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:300,
+        messages:[{role:'user',content:prompt}]})
+    });
+    if(res.status===401){
+      ib.style.color='var(--ink3)';
+      ib.textContent='⚠ 需要 Anthropic API Key。\n\n建議：由 Apps Script 每天自動呼叫 Claude API，結果寫入 Google Sheets，網頁直接讀取——這樣完全不需要在前端暴露 Key，且每天只花 ~$0.003。';
+    } else {
+      const data=await res.json();
+      ib.style.cssText='color:var(--ink);font-style:normal';
+      ib.textContent=data.content[0].text;
+      im.textContent=new Date().toLocaleTimeString('zh-TW');
+    }
+  }catch(e){
+    ib.style.color='var(--ink4)';
+    ib.textContent='網絡錯誤 ('+e.message+')';
+  }
+  btn.classList.remove('busy');btn.textContent='✦ AI 分析';
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ★★★ 密碼設置 — 在這裡修改密碼 ★★★
+// ══════════════════════════════════════════════════════════════
+const PASSWORDS = [
+  'kxmedia2026',   // ← 主密碼（必填）
+  'kxteam888',     // ← 備用密碼（可刪除此行）
+];
+const SESSION_HOURS = 24; // 登入有效期，單位：小時
+
+// ── 密碼驗證邏輯（請勿修改以下代碼）────────────────────────
+const PW_KEY = 'kx_auth_v1';
+
+function initAuth(){
+  const saved = sessionStorage.getItem(PW_KEY);
+  if(saved){
+    try{
+      const {ts} = JSON.parse(saved);
+      if(Date.now() - ts < SESSION_HOURS * 3600000){
+        startApp(); return;
+      }
+    }catch(e){}
+  }
+  document.getElementById('pw-screen').style.display = 'flex';
+  setTimeout(()=>document.getElementById('pw-input').focus(), 80);
+}
+
+function checkPw(){
+  const val = document.getElementById('pw-input').value.trim();
+  const inp = document.getElementById('pw-input');
+  const err = document.getElementById('pw-err');
+  if(PASSWORDS.includes(val)){
+    sessionStorage.setItem(PW_KEY, JSON.stringify({ts:Date.now()}));
+    document.getElementById('pw-screen').style.display = 'none';
+    startApp();
+  } else {
+    inp.classList.add('error');
+    err.classList.add('show');
+    inp.value = '';
+    inp.focus();
+    setTimeout(()=>inp.classList.remove('error'), 500);
+  }
+}
+
+function togglePwVis(){
+  const inp = document.getElementById('pw-input');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  document.getElementById('pw-eye-btn').textContent = inp.type==='password' ? '👁' : '🙈';
+}
+
+function startApp(){
+  Chart.defaults.color='#8a8880';
+  Chart.defaults.borderColor='#2a2a26';
+  Chart.defaults.font.family="'Syne','Noto Sans TC',sans-serif";
+  loadData();
+}
+
+// ── BOOT ──────────────────────────────────────────────────────
+initAuth();
+</script>
+</body>
+</html>
